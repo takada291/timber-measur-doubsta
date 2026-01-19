@@ -49,7 +49,7 @@
         .voice-btn-group button { flex: 1; padding: 15px; border: none; border-radius: 6px; font-weight: bold; color: white; font-size: 1rem; }
         .btn-mic { background: #8b4513; }
         .btn-save { background: #5d4037; }
-        .btn-cancel { background: #999; }
+        /* .btn-cancel は削除しました */
         .guide-bottom { font-size: 0.8rem; color: #795548; text-align: center; margin-top: 10px; }
 
         /* --- 電卓モード用 (大型UI) --- */
@@ -88,7 +88,7 @@
 
 <div class="card">
     <div class="header-area">
-        <h2>🌲 丸太検知v2.1</h2>
+        <h2>丸太検知v2.2</h2>
         <button class="settings-btn" onclick="openSettings()">⚙️ 設定</button>
     </div>
 
@@ -132,8 +132,7 @@
         <div class="voice-btn-group">
             <button class="btn-mic" onclick="toggleMic()">🎤 開始/停止</button>
             <button class="btn-save" onclick="saveData('voice')">保存</button>
-            <button class="btn-cancel" onclick="clearVoiceForm()">クリア</button>
-        </div>
+            </div>
         <p class="guide-bottom">※「ほぞん」と発音すると登録されます。</p>
     </div>
 
@@ -526,7 +525,6 @@
         
         if(isMicOn) {
             // 【重要】スマホでの音声合成の「ロック解除」のためのダミー発話
-            // ユーザーのタップ操作（このボタンクリック）のタイミングで一度AudioContextを叩いておく
             if(window.speechSynthesis) {
                 const dummy = new SpeechSynthesisUtterance('');
                 window.speechSynthesis.speak(dummy);
@@ -598,4 +596,3 @@
 </script>
 </body>
 </html>
-
