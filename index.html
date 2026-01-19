@@ -230,18 +230,45 @@
         
         // 音声認識初期化 (Web Speech API)
         initVoice();
+        
+        // 音声合成の声を事前にロードしておく（モバイル対応）
+        if(window.speechSynthesis) {
+            window.speechSynthesis.getVoices();
+            window.speechSynthesis.onvoiceschanged = function() {
+                window.speechSynthesis.getVoices();
+            };
+        }
     };
 
-    // --- 【追加】音声合成 (オウム返し) 機能 ---
+    // --- 【修正版】音声合成 (オウム返し) 機能 ---
+    // ガベージコレクションで音声が途切れるのを防ぐためにグローバル変数に保持
+    let lastUtterance = null;
+
     function speakText(text) {
         if (!window.speechSynthesis) return;
         
-        // 既存の発話をキャンセル（連続発話防止）
+        // 連続発話時のキュー溜まりを防ぐ
         window.speechSynthesis.cancel();
         
         const uttr = new SpeechSynthesisUtterance(text);
         uttr.lang = 'ja-JP';
-        uttr.rate = 1.0; // 速度
+        uttr.rate = 1.0; 
+
+        // 日本語の声を明示的に探して設定する（Android/iOS対策）
+        const voices = window.speechSynthesis.getVoices();
+        const jaVoice = voices.find(v => v.lang.includes('ja'));
+        if (jaVoice) {
+            uttr.voice = jaVoice;
+        }
+
+        // 変数に代入して保持（途切れ防止）
+        lastUtterance = uttr;
+        
+        // 読み上げ終了後に変数をクリア
+        uttr.onend = function() {
+            lastUtterance = null;
+        };
+
         window.speechSynthesis.speak(uttr);
     }
 
@@ -312,11 +339,9 @@
         });
         localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
 
-        // 【追加】保存時のオウム返し
+        // 【修正】保存時のオウム返し
         if(source === 'voice') {
             speakText(`${tree}、長さ${len}、直径${dia}、保存しました`);
-        } else {
-            // 電卓モードでも保存音声を鳴らすかはお好みですが、今回は音声モードの要望に従いvoiceのみ明示的に
         }
 
         // フォームクリア & 再描画
@@ -500,6 +525,13 @@
         const status = document.getElementById('voiceStatus');
         
         if(isMicOn) {
+            // 【重要】スマホでの音声合成の「ロック解除」のためのダミー発話
+            // ユーザーのタップ操作（このボタンクリック）のタイミングで一度AudioContextを叩いておく
+            if(window.speechSynthesis) {
+                const dummy = new SpeechSynthesisUtterance('');
+                window.speechSynthesis.speak(dummy);
+            }
+
             recognition.start();
             btn.style.background = "#d32f2f";
             btn.innerText = "■ 停止";
@@ -555,14 +587,10 @@
         }
         // 備考：「めも」＋内容（「まがり」は「曲り」へ変換）
         else if(text.includes("メモ") || text.includes("めも")) {
-            // "めも" より後ろの部分を取得
             let memoContent = text.replace(/.*(メモ|めも)/, "").trim();
-            
-            // 変換辞書（指示対応）
             if(memoContent.includes("まがり")) {
                 memoContent = memoContent.replace("まがり", "曲り");
             }
-            
             document.getElementById('v_memo').value = memoContent;
             speakText("備考 " + memoContent);
         }
