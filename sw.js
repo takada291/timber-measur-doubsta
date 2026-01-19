@@ -1,4 +1,4 @@
-const CACHE_NAME = 'timber-measur-doubsta-v2.1.0';2026.01.19 17:14
+const CACHE_NAME = 'timber-measur-doubsta-v2.2.0';2026.01.19 17:25
 const urlsToCache = [
   './',
   'index.html',
@@ -38,6 +38,7 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
 
 
 
