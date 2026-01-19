@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>丸太検知Doubsta v1.0</title>
+    <title>丸太検知</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#8b4513">
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <meta name="apple-mobile-web-app-title" content="丸太Doubsta">
+    <meta name="apple-mobile-web-app-title" content="丸太検知">
     <link rel="apple-touch-icon" href="icon-512.png">
 
     <style>
@@ -31,9 +31,12 @@
 
         /* --- 共通入力エリア --- */
         .input-row { margin-bottom: 12px; }
-        .label-group { display: flex; align-items: baseline; margin-bottom: 4px; }
-        .label-group label { width: 100px; font-size: 0.9em; font-weight: bold; color: #5d4037; }
-        .guide { font-size: 0.75em; color: #795548; }
+        /* 注釈を見やすくするためにflex-directionを変更 */
+        .label-group { display: flex; flex-direction: column; margin-bottom: 4px; }
+        .label-group label { font-size: 0.9em; font-weight: bold; color: #5d4037; }
+        /* 注釈用スタイル */
+        .guide-label { font-size: 0.75em; color: #795548; margin-bottom: 2px; }
+        
         input, select { width: 100%; padding: 12px; border: 1px solid #d7ccc8; border-radius: 6px; font-size: 16px; box-sizing: border-box; background: white; }
         input[readonly] { background-color: #f0f0f0; color: #555; font-weight: bold; }
 
@@ -47,6 +50,7 @@
         .btn-mic { background: #8b4513; }
         .btn-save { background: #5d4037; }
         .btn-cancel { background: #999; }
+        .guide-bottom { font-size: 0.8rem; color: #795548; text-align: center; margin-top: 10px; }
 
         /* --- 電卓モード用 (大型UI) --- */
         .calc-display-area { background: #eee; padding: 15px; border-radius: 8px; margin-bottom: 10px; text-align: right; border: 2px solid #ccc; }
@@ -84,7 +88,7 @@
 
 <div class="card">
     <div class="header-area">
-        <h2>🌲 丸太検知 Doubsta</h2>
+        <h2>🌲 丸太検知v2.0</h2>
         <button class="settings-btn" onclick="openSettings()">⚙️ 設定</button>
     </div>
 
@@ -97,19 +101,31 @@
         <div id="voiceStatus">音声入力：待機中</div>
         
         <div class="input-row">
-            <div class="label-group"><label>樹種</label></div>
+            <div class="label-group">
+                <span class="guide-label">追加樹種は設定から</span>
+                <label>樹種</label>
+            </div>
             <select id="v_treeType" class="tree-selector"></select>
         </div>
         <div class="input-row">
-            <div class="label-group"><label>材長 (m)</label></div>
+            <div class="label-group">
+                <span class="guide-label">発音例「ながさ　よん」</span>
+                <label>材長 (m)</label>
+            </div>
             <input type="number" id="v_length" value="4">
         </div>
         <div class="input-row">
-            <div class="label-group"><label>末口 (cm)</label></div>
+            <div class="label-group">
+                <span class="guide-label">発音例「ちょっけい　さんじゅうろく」</span>
+                <label>末口直径 (cm)</label>
+            </div>
             <input type="number" id="v_diameter">
         </div>
         <div class="input-row">
-            <div class="label-group"><label>備考</label></div>
+            <div class="label-group">
+                <span class="guide-label">発音例「めも　まがり」</span>
+                <label>備考</label>
+            </div>
             <input type="text" id="v_memo">
         </div>
 
@@ -118,7 +134,7 @@
             <button class="btn-save" onclick="saveData('voice')">保存</button>
             <button class="btn-cancel" onclick="clearVoiceForm()">クリア</button>
         </div>
-        <p class="guide" style="text-align:center; margin-top:10px;">※「すぎ」「直径24」「保存」などと発話</p>
+        <p class="guide-bottom">※「ほぞん」と発音すると登録されます。</p>
     </div>
 
     <div id="viewCalc" style="display:none;">
@@ -127,10 +143,11 @@
             <select id="c_treeType" class="tree-selector" style="font-size:1.2rem; padding:10px;"></select>
         </div>
 
+        <span class="calc-label">材長 (m)</span>
         <div class="length-control">
-            <button class="length-btn" onclick="addLength(-0.5)">－</button>
-            <div class="length-display"><span id="c_length_disp">4.0</span> m</div>
-            <button class="length-btn" onclick="addLength(0.5)">＋</button>
+            <button class="length-btn" onclick="addLength(-1)">－</button>
+            <div class="length-display"><span id="c_length_disp">4</span> m</div>
+            <button class="length-btn" onclick="addLength(1)">＋</button>
         </div>
 
         <div class="calc-display-area" onclick="clearCalc()">
@@ -155,7 +172,7 @@
             <button class="num-btn btn-save-large" style="grid-row: span 2;" onclick="saveData('calc')">保存</button>
 
             <button class="num-btn" onclick="numInput(0)" style="grid-column: span 2;">0</button>
-            </div>
+        </div>
     </div>
 
 </div>
@@ -198,7 +215,7 @@
     
     // 電卓用ステート
     let calcDiameterStr = "";
-    let calcLength = 4.0;
+    let calcLength = 4; // 整数で管理
 
     // --- 初期化 ---
     window.onload = function() {
@@ -214,6 +231,19 @@
         // 音声認識初期化 (Web Speech API)
         initVoice();
     };
+
+    // --- 【追加】音声合成 (オウム返し) 機能 ---
+    function speakText(text) {
+        if (!window.speechSynthesis) return;
+        
+        // 既存の発話をキャンセル（連続発話防止）
+        window.speechSynthesis.cancel();
+        
+        const uttr = new SpeechSynthesisUtterance(text);
+        uttr.lang = 'ja-JP';
+        uttr.rate = 1.0; // 速度
+        window.speechSynthesis.speak(uttr);
+    }
 
     // --- モード切替 ---
     function switchMode(mode) {
@@ -253,12 +283,12 @@
         }
 
         if (!len || !dia) {
+            if(source === 'voice') speakText("材長か直径が未入力です");
             alert("材長または直径が入力されていません");
             return;
         }
 
         // 材積計算 (JAS丸めなしの簡易計算: 小数3位)
-        // 必要ならここにJASロジックを入れる
         let vol = 0;
         if (len < 6) {
             vol = (dia * dia * len) / 10000;
@@ -278,9 +308,16 @@
             diameter: dia,
             volume: vol,
             memo: memo,
-            mode: source // どちらのモードで入力したか記録
+            mode: source
         });
         localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+
+        // 【追加】保存時のオウム返し
+        if(source === 'voice') {
+            speakText(`${tree}、長さ${len}、直径${dia}、保存しました`);
+        } else {
+            // 電卓モードでも保存音声を鳴らすかはお好みですが、今回は音声モードの要望に従いvoiceのみ明示的に
+        }
 
         // フォームクリア & 再描画
         if (source === 'voice') {
@@ -334,12 +371,10 @@
         if (num === 'BS') {
             calcDiameterStr = calcDiameterStr.slice(0, -1);
         } else {
-            // 文字列として連結（3桁まで制限など好みで）
             if (calcDiameterStr.length < 3) {
                 calcDiameterStr += num;
             }
         }
-        // 表示更新
         const display = document.getElementById('c_diameter_disp');
         display.innerText = calcDiameterStr === "" ? "0" : calcDiameterStr;
     }
@@ -349,10 +384,11 @@
         document.getElementById('c_diameter_disp').innerText = "0";
     }
 
+    // 【修正】1m単位で増減、最低値1m
     function addLength(val) {
         calcLength += val;
-        if(calcLength < 0.5) calcLength = 0.5; // 最低値
-        document.getElementById('c_length_disp').innerText = calcLength.toFixed(1);
+        if(calcLength < 1) calcLength = 1; 
+        document.getElementById('c_length_disp').innerText = calcLength;
     }
 
     // --- 設定関連 ---
@@ -410,7 +446,8 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         const now = new Date();
-        const fname = `丸太検知Doubsta-${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}-${now.getHours().toString().padStart(2,'0')}${now.getMinutes().toString().padStart(2,'0')}.csv`;
+        // 【指示】CSVファイル名は「丸太検知...」
+        const fname = `丸太検知-${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}-${now.getHours().toString().padStart(2,'0')}${now.getMinutes().toString().padStart(2,'0')}.csv`;
         
         a.href = url;
         a.download = fname;
@@ -418,9 +455,22 @@
         setTimeout(() => URL.revokeObjectURL(url), 100);
     }
 
-    // --- 音声認識 (Web Speech API - Online) ---
+    // --- 音声認識 (Web Speech API) & 変換ロジック ---
     let recognition;
     let isMicOn = false;
+
+    // 漢数字対応用マップ
+    const kanjiNumMap = { '一':1, '二':2, '三':3, '四':4, '五':5, '六':6, '七':7, '八':8, '九':9, '〇':0, '零':0 };
+
+    function textToNum(text) {
+        // 全角数字を半角に
+        text = text.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+        // 漢数字をある程度変換 (簡易的)
+        text = text.replace(/[一二三四五六七八九〇]/g, s => kanjiNumMap[s]);
+        // 数字のみ抽出
+        const match = text.match(/\d+/);
+        return match ? match[0] : null;
+    }
 
     function initVoice() {
         if (!window.webkitSpeechRecognition && !window.SpeechRecognition) {
@@ -469,23 +519,52 @@
         document.getElementById('v_memo').value = "";
     }
 
+    // 【指示】音声変換・入力ロジックの復活
     function parseVoice(text) {
-        // 簡易パーサー
-        if(text.includes("保存")) { saveData('voice'); return; }
-        
-        // 樹種
-        const treeSel = document.getElementById('v_treeType');
-        if(text.includes("すぎ")) treeSel.value = "スギ";
-        else if(text.includes("ひのき")) treeSel.value = "ヒノキ";
-        
-        // 数字抽出 (直径)
-        const nums = text.match(/\d+/g);
-        if(nums && (text.includes("直径") || text.includes("センチ"))) {
-            document.getElementById('v_diameter').value = nums[0];
+        // 保存コマンド
+        if(text.includes("保存") || text.includes("ほぞん")) {
+            saveData('voice');
+            return;
         }
-        // 長さ
-        if(nums && (text.includes("長さ") || text.includes("メートル"))) {
-            document.getElementById('v_length').value = nums[0];
+        
+        // 樹種コマンド
+        const treeSel = document.getElementById('v_treeType');
+        if(text.includes("すぎ") || text.includes("スギ")) {
+            treeSel.value = "スギ";
+            speakText("スギ");
+        } else if(text.includes("ひのき") || text.includes("ヒノキ")) {
+            treeSel.value = "ヒノキ";
+            speakText("ヒノキ");
+        }
+        
+        // 材長：「ながさ」＋数値
+        if(text.includes("長さ") || text.includes("ながさ")) {
+            const num = textToNum(text);
+            if(num) {
+                document.getElementById('v_length').value = num;
+                speakText("長さ " + num);
+            }
+        }
+        // 末口直径：「直径」or「ちょっけい」or「センチ」＋数値
+        else if(text.includes("直径") || text.includes("ちょっけい") || text.includes("センチ")) {
+            const num = textToNum(text);
+            if(num) {
+                document.getElementById('v_diameter').value = num;
+                speakText("直径 " + num);
+            }
+        }
+        // 備考：「めも」＋内容（「まがり」は「曲り」へ変換）
+        else if(text.includes("メモ") || text.includes("めも")) {
+            // "めも" より後ろの部分を取得
+            let memoContent = text.replace(/.*(メモ|めも)/, "").trim();
+            
+            // 変換辞書（指示対応）
+            if(memoContent.includes("まがり")) {
+                memoContent = memoContent.replace("まがり", "曲り");
+            }
+            
+            document.getElementById('v_memo').value = memoContent;
+            speakText("備考 " + memoContent);
         }
     }
 </script>
